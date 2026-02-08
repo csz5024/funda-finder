@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
+from funda_finder.analysis import PropertyAnalyzer
 from funda_finder.db.models import Property
 from funda_finder.db.session import get_db
 
@@ -14,63 +15,74 @@ router = APIRouter()
 @router.get("/undervalued")
 async def get_undervalued_properties(
     city: Optional[str] = None,
-    min_score: Optional[float] = Query(None, description="Minimum undervalue score"),
+    listing_type: str = Query("buy", description="Property listing type (buy or rent)"),
+    min_score: Optional[float] = Query(None, description="Minimum undervalue score (0-100)"),
     limit: int = Query(50, le=200),
     db: Session = Depends(get_db)
 ):
     """Get ranked list of potentially undervalued properties.
 
-    NOTE: This endpoint returns basic price/area ratio for now.
-    Full undervalue scoring will be implemented when ff-3od (Property analysis engine) is complete.
-
-    TODO (ff-3od): Integrate proper undervalue scoring based on:
+    Uses composite scoring based on:
     - Price/m² z-score vs comparable properties
     - Days on market
     - Price drop history
-    - Composite scoring algorithm
+
+    Score range: 0-100 (higher score = more undervalued)
     """
-    # Validate limit
+    # Validate parameters
     if limit < 1 or limit > 200:
         raise HTTPException(status_code=400, detail="limit must be between 1 and 200")
 
-    query = select(Property).where(
-        Property.price.isnot(None),
-        Property.living_area.isnot(None),
-        Property.living_area > 0
+    if listing_type not in ["buy", "rent"]:
+        raise HTTPException(status_code=400, detail="listing_type must be 'buy' or 'rent'")
+
+    if min_score is not None and (min_score < 0 or min_score > 100):
+        raise HTTPException(status_code=400, detail="min_score must be between 0 and 100")
+
+    # Use analyzer to find undervalued properties
+    analyzer = PropertyAnalyzer(db)
+    results = analyzer.find_undervalued_properties(
+        city=city,
+        listing_type=listing_type,
+        min_score=min_score,
+        limit=limit
     )
 
-    if city:
-        query = query.where(Property.city.ilike(f"%{city}%"))
+    # Format response
+    properties = []
+    for score_obj in results:
+        prop_data = {
+            "id": score_obj.property_id,
+            "funda_id": score_obj.funda_id,
+            "address": score_obj.address,
+            "city": score_obj.city,
+            "price": score_obj.price,
+            "living_area": score_obj.living_area,
+            "price_per_sqm": score_obj.price_per_sqm,
+            "undervalue_score": score_obj.composite_score,
+            "percentile_rank": score_obj.percentile_rank,
+            "explanation": score_obj.explanation,
+            "score_components": score_obj.score_components,
+        }
 
-    query = query.limit(limit)
-    result = db.execute(query)
-    properties = result.scalars().all()
+        # Include comparable group stats if available
+        if score_obj.comparable_group:
+            prop_data["comparable_group"] = {
+                "count": score_obj.comparable_group.count,
+                "avg_price_per_sqm": round(score_obj.comparable_group.mean_price_per_sqm, 2),
+                "median_price_per_sqm": round(score_obj.comparable_group.median_price_per_sqm, 2),
+            }
 
-    # Basic price per sqm ranking (placeholder until ff-3od is complete)
-    analyzed = []
-    for p in properties:
-        if p.price and p.living_area and p.living_area > 0:
-            price_per_sqm = p.price / p.living_area
-            analyzed.append({
-                "id": p.id,
-                "funda_id": p.funda_id,
-                "address": p.address,
-                "city": p.city,
-                "price": p.price,
-                "living_area": p.living_area,
-                "price_per_sqm": round(price_per_sqm, 2),
-                "rooms": p.rooms,
-                "year_built": p.year_built,
-                "score": None,  # TODO: Add composite undervalue score from ff-3od
-                "score_explanation": "Basic price/m² calculation - full scoring pending",
-            })
-
-    # Sort by price per sqm (ascending = cheaper per sqm)
-    analyzed.sort(key=lambda x: x["price_per_sqm"])
+        properties.append(prop_data)
 
     return {
-        "properties": analyzed,
-        "note": "Basic ranking by price/m². Full undervalue analysis pending (ff-3od)."
+        "properties": properties,
+        "count": len(properties),
+        "filters": {
+            "city": city,
+            "listing_type": listing_type,
+            "min_score": min_score,
+        }
     }
 
 
@@ -78,68 +90,27 @@ async def get_undervalued_properties(
 async def get_market_statistics(
     city: Optional[str] = None,
     listing_type: Optional[str] = Query(None, description="buy or rent"),
+    group_by_city: bool = Query(False, description="Group statistics by city"),
     db: Session = Depends(get_db)
 ):
-    """Get market statistics and trends.
+    """Get comprehensive market statistics and trends.
 
-    NOTE: Returns basic aggregates for now.
-    Advanced statistical analysis will be implemented when ff-3od is complete.
-
-    TODO (ff-3od): Add:
-    - Price/m² distribution by neighborhood
-    - Price trends over time
-    - Z-scores and percentile rankings
-    - Comparable property grouping stats
+    Returns:
+    - Price distributions (mean, median, std, min, max)
+    - Living area statistics
+    - Price per m² analysis
+    - Optional grouping by city
     """
     # Validate listing_type
     if listing_type and listing_type not in ["buy", "rent"]:
         raise HTTPException(status_code=400, detail="listing_type must be 'buy' or 'rent'")
 
-    query = select(Property).where(Property.price.isnot(None))
-
-    if city:
-        query = query.where(Property.city.ilike(f"%{city}%"))
-    if listing_type:
-        query = query.where(Property.listing_type == listing_type)
-
-    result = db.execute(query)
-    properties = list(result.scalars().all())
-
-    if not properties:
-        return {
-            "total_properties": 0,
-            "note": "No properties found matching criteria"
-        }
-
-    # Basic statistics
-    prices = [p.price for p in properties if p.price]
-    areas = [p.living_area for p in properties if p.living_area and p.living_area > 0]
-    price_per_sqm_list = [
-        p.price / p.living_area
-        for p in properties
-        if p.price and p.living_area and p.living_area > 0
-    ]
-
-    stats = {
-        "total_properties": len(properties),
-        "price": {
-            "avg": round(sum(prices) / len(prices), 2) if prices else None,
-            "min": min(prices) if prices else None,
-            "max": max(prices) if prices else None,
-            "median": round(sorted(prices)[len(prices) // 2], 2) if prices else None,
-        },
-        "living_area": {
-            "avg": round(sum(areas) / len(areas), 2) if areas else None,
-            "min": min(areas) if areas else None,
-            "max": max(areas) if areas else None,
-        },
-        "price_per_sqm": {
-            "avg": round(sum(price_per_sqm_list) / len(price_per_sqm_list), 2) if price_per_sqm_list else None,
-            "min": round(min(price_per_sqm_list), 2) if price_per_sqm_list else None,
-            "max": round(max(price_per_sqm_list), 2) if price_per_sqm_list else None,
-            "median": round(sorted(price_per_sqm_list)[len(price_per_sqm_list) // 2], 2) if price_per_sqm_list else None,
-        },
-        "note": "Basic aggregates - advanced analysis pending (ff-3od)"
-    }
+    # Use analyzer for comprehensive statistics
+    analyzer = PropertyAnalyzer(db)
+    stats = analyzer.get_market_statistics(
+        city=city,
+        listing_type=listing_type,
+        group_by_city=group_by_city
+    )
 
     return stats
