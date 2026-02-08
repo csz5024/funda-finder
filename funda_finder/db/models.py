@@ -29,13 +29,14 @@ class Property(Base):
     address = Column(String, nullable=False)
     city = Column(String, nullable=False, index=True)
     postal_code = Column(String)
-    price = Column(Integer)
+    price = Column(Integer, index=True)
     living_area = Column(Integer)  # m²
     plot_area = Column(Integer)  # m²
     rooms = Column(Integer)
     bedrooms = Column(Integer)
-    year_built = Column(Integer)
-    energy_label = Column(String)
+    bathrooms = Column(Integer)
+    year_built = Column(Integer, index=True)
+    energy_label = Column(String, index=True)
     listing_type = Column(String, nullable=False, index=True)  # "buy" or "rent"
     status = Column(String, default="active", index=True)
     lat = Column(Float)
@@ -44,6 +45,7 @@ class Property(Base):
     photos_json = Column(Text)  # JSON array of photo URLs
     raw_json = Column(Text)  # full scraped payload
     scraped_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
@@ -67,7 +69,7 @@ class PriceHistory(Base):
         Integer, ForeignKey("properties.id", ondelete="CASCADE"), nullable=False, index=True
     )
     price = Column(Integer, nullable=False)
-    observed_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    observed_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
 
     property = relationship("Property", back_populates="price_history")
 
