@@ -2,10 +2,10 @@
 
 import logging
 import time
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
-from bs4 import BeautifulSoup
-from funda_scraper import FundaScraper
+if TYPE_CHECKING:
+    from funda_scraper import FundaScraper
 
 from .base import (
     PropertyType,
@@ -131,6 +131,9 @@ class HtmlScraper(ScraperInterface):
         self._rate_limit_wait()
 
         try:
+            # Lazy import to avoid dependency issues at module load time
+            from funda_scraper import FundaScraper
+
             # Initialize funda-scraper
             # area parameter is the city name
             # want_to parameter is "buy" or "rent"

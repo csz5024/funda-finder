@@ -1,6 +1,7 @@
 # Scraping
 pyfunda>=2.2.0
 funda-scraper>=1.2.0
+urllib3<2  # funda-scraper compatibility
 
 # Database
 sqlalchemy>=2.0
