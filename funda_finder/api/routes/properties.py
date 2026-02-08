@@ -39,6 +39,19 @@ async def list_properties(
 
     Returns paginated list of properties matching the given criteria.
     """
+    # Validate listing_type
+    if listing_type and listing_type not in ["buy", "rent"]:
+        raise HTTPException(status_code=400, detail="listing_type must be 'buy' or 'rent'")
+
+    # Validate sort fields
+    allowed_sort_fields = ["updated_at", "price", "living_area", "city", "rooms", "year_built"]
+    if sort_by not in allowed_sort_fields:
+        raise HTTPException(status_code=400, detail=f"sort_by must be one of: {', '.join(allowed_sort_fields)}")
+
+    # Validate sort order
+    if sort_order not in ["asc", "desc"]:
+        raise HTTPException(status_code=400, detail="sort_order must be 'asc' or 'desc'")
+
     query = select(Property)
 
     # Apply filters
@@ -56,7 +69,7 @@ async def list_properties(
         query = query.where(Property.listing_type == listing_type)
 
     # Sorting
-    sort_field = getattr(Property, sort_by, Property.updated_at)
+    sort_field = getattr(Property, sort_by)
     if sort_order == "asc":
         query = query.order_by(sort_field.asc())
     else:
