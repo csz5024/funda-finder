@@ -1,7 +1,7 @@
 """Property analysis endpoints."""
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
@@ -39,6 +39,10 @@ async def get_undervalued_properties(
     - Price drop history
     - Composite scoring algorithm
     """
+    # Validate limit
+    if limit < 1 or limit > 200:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 200")
+
     query = select(Property).where(
         Property.price.isnot(None),
         Property.living_area.isnot(None),
@@ -97,6 +101,10 @@ async def get_market_statistics(
     - Z-scores and percentile rankings
     - Comparable property grouping stats
     """
+    # Validate listing_type
+    if listing_type and listing_type not in ["buy", "rent"]:
+        raise HTTPException(status_code=400, detail="listing_type must be 'buy' or 'rent'")
+
     query = select(Property).where(Property.price.isnot(None))
 
     if city:
