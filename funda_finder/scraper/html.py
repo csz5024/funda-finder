@@ -1,6 +1,7 @@
 """HTML scraper implementation using funda-scraper library."""
 
 import logging
+import random
 import time
 from typing import List, Optional, TYPE_CHECKING
 
@@ -26,6 +27,15 @@ class HtmlScraper(ScraperInterface):
     API is unavailable or rate-limited.
     """
 
+    # User-Agent rotation pool to avoid detection
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    ]
+
     def __init__(self, rate_limit_seconds: float = 3.0):
         """Initialize HTML scraper.
 
@@ -34,6 +44,7 @@ class HtmlScraper(ScraperInterface):
         """
         self._rate_limit = rate_limit_seconds
         self._last_request_time = 0.0
+        self._current_user_agent = random.choice(self.USER_AGENTS)
 
     @property
     def source(self) -> ScraperSource:
@@ -41,13 +52,26 @@ class HtmlScraper(ScraperInterface):
         return ScraperSource.HTML
 
     def _rate_limit_wait(self) -> None:
-        """Wait if needed to respect rate limiting."""
+        """Wait if needed to respect rate limiting with jitter."""
         elapsed = time.time() - self._last_request_time
         if elapsed < self._rate_limit:
             wait_time = self._rate_limit - elapsed
-            logger.debug(f"Rate limiting: waiting {wait_time:.2f}s")
+            # Add jitter: ±20% random variation to avoid patterns
+            jitter = random.uniform(-0.2, 0.2) * wait_time
+            wait_time = max(0.1, wait_time + jitter)  # Ensure minimum 0.1s wait
+            logger.debug(f"Rate limiting: waiting {wait_time:.2f}s (with jitter)")
             time.sleep(wait_time)
         self._last_request_time = time.time()
+
+    def _rotate_user_agent(self) -> str:
+        """Rotate to a new random User-Agent.
+
+        Returns:
+            New User-Agent string
+        """
+        self._current_user_agent = random.choice(self.USER_AGENTS)
+        logger.debug(f"Rotated User-Agent: {self._current_user_agent[:50]}...")
+        return self._current_user_agent
 
     def _normalize_listing(self, raw_data: dict, property_type: PropertyType) -> RawListing:
         """Normalize funda-scraper data to RawListing format.
@@ -133,6 +157,9 @@ class HtmlScraper(ScraperInterface):
         try:
             # Lazy import to avoid dependency issues at module load time
             from funda_scraper import FundaScraper
+
+            # Rotate User-Agent for each request
+            user_agent = self._rotate_user_agent()
 
             # Initialize funda-scraper
             # area parameter is the city name

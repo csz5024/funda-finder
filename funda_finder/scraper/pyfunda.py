@@ -1,6 +1,7 @@
 """PyFunda scraper implementation using the funda.io mobile API."""
 
 import logging
+import random
 import time
 from typing import List, Optional, TYPE_CHECKING
 
@@ -45,11 +46,14 @@ class PyFundaScraper(ScraperInterface):
         return ScraperSource.PYFUNDA
 
     def _rate_limit_wait(self) -> None:
-        """Wait if needed to respect rate limiting."""
+        """Wait if needed to respect rate limiting with jitter."""
         elapsed = time.time() - self._last_request_time
         if elapsed < self._rate_limit:
             wait_time = self._rate_limit - elapsed
-            logger.debug(f"Rate limiting: waiting {wait_time:.2f}s")
+            # Add jitter: ±20% random variation to avoid patterns
+            jitter = random.uniform(-0.2, 0.2) * wait_time
+            wait_time = max(0.1, wait_time + jitter)  # Ensure minimum 0.1s wait
+            logger.debug(f"Rate limiting: waiting {wait_time:.2f}s (with jitter)")
             time.sleep(wait_time)
         self._last_request_time = time.time()
 
