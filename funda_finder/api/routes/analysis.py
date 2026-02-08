@@ -6,19 +6,9 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from funda_finder.db.models import Property
-from funda_finder.db.session import get_session
+from funda_finder.db.session import get_db
 
 router = APIRouter()
-
-
-def get_db():
-    """Database session dependency."""
-    gen = get_session()
-    session = next(gen)
-    try:
-        yield session
-    finally:
-        session.close()
 
 
 @router.get("/undervalued")
