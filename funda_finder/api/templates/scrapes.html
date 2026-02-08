@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Scrape Status - Funda Property Finder{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Scrape Status</h1>
+    <p>View information about data freshness and scraping history.</p>
+</div>
+
+<div id="current-status">
+    <div class="card text-center">
+        <p>Loading current status...</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Scrape History</h2>
+    <div id="scrape-history">
+        <p class="text-center">Loading history...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function loadScrapeStatus() {
+    const response = await fetch('/api/scrape/status');
+    const data = await response.json();
+    renderStatus(data);
+}
+
+async function loadScrapeHistory() {
+    const response = await fetch('/api/scrape/history');
+    const data = await response.json();
+    renderHistory(data);
+}
+
+function renderStatus(data) {
+    const container = document.getElementById('current-status');
+
+    if (data.status === 'no_scrapes') {
+        container.innerHTML = `
+        <div class="card text-center">
+            <h2>No Scrapes Yet</h2>
+            <p>${data.message}</p>
+            <p class="mt-2">Run a scrape to populate the database:</p>
+            <code>python -m funda_finder.cli scrape --city amsterdam --type buy</code>
+        </div>
+        `;
+        return;
+    }
+
+    const statusBadge = data.status === 'completed' ? 'badge-success' : 'badge-warning';
+    const statusText = data.status === 'completed' ? 'Completed' : 'In Progress';
+
+    const html = `
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Status</div>
+            <div class="stat-value"><span class="badge ${statusBadge}">${statusText}</span></div>
+            <small>Run ID: ${data.run_id}</small>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Started</div>
+            <div class="stat-value" style="font-size: 1.2rem;">${new Date(data.started_at).toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Listings Found</div>
+            <div class="stat-value">${data.listings_found}</div>
+            <small>New: ${data.listings_new} | Updated: ${data.listings_updated}</small>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Finished</div>
+            <div class="stat-value" style="font-size: 1.2rem;">
+                ${data.finished_at ? new Date(data.finished_at).toLocaleString() : 'In progress...'}
+            </div>
+        </div>
+    </div>
+    ${data.errors ? `<div class="card"><h3>Errors</h3><pre>${JSON.stringify(data.errors, null, 2)}</pre></div>` : ''}
+    `;
+
+    container.innerHTML = html;
+}
+
+function renderHistory(data) {
+    const container = document.getElementById('scrape-history');
+
+    if (!data.scrapes || data.scrapes.length === 0) {
+        container.innerHTML = '<p class="text-center">No scrape history available.</p>';
+        return;
+    }
+
+    let html = '<table><thead><tr>';
+    html += '<th>Run ID</th>';
+    html += '<th>Started</th>';
+    html += '<th>Finished</th>';
+    html += '<th>Found</th>';
+    html += '<th>New</th>';
+    html += '<th>Updated</th>';
+    html += '<th>Errors</th>';
+    html += '</tr></thead><tbody>';
+
+    data.scrapes.forEach(scrape => {
+        const statusBadge = scrape.finished_at ? 'badge-success' : 'badge-warning';
+        const errorBadge = scrape.has_errors ? 'badge badge-warning' : '';
+
+        html += '<tr>';
+        html += `<td>${scrape.run_id}</td>`;
+        html += `<td>${new Date(scrape.started_at).toLocaleString()}</td>`;
+        html += `<td>${scrape.finished_at ? new Date(scrape.finished_at).toLocaleString() : '<span class="badge badge-warning">In Progress</span>'}</td>`;
+        html += `<td>${scrape.listings_found}</td>`;
+        html += `<td>${scrape.listings_new}</td>`;
+        html += `<td>${scrape.listings_updated}</td>`;
+        html += `<td>${scrape.has_errors ? '<span class="badge badge-warning">Yes</span>' : ''}</td>`;
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+// Load on page load
+loadScrapeStatus();
+loadScrapeHistory();
+
+// Refresh every 30 seconds if there's an in-progress scrape
+setInterval(() => {
+    loadScrapeStatus();
+    loadScrapeHistory();
+}, 30000);
+</script>
+{% endblock %}

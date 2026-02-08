@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Properties - Funda Property Finder{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Property Listings</h1>
+
+    <form class="filter-form" hx-get="/api/properties" hx-target="#properties-list" hx-trigger="submit, change">
+        <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" placeholder="e.g., Amsterdam">
+        </div>
+
+        <div class="form-group">
+            <label for="listing_type">Type</label>
+            <select id="listing_type" name="listing_type">
+                <option value="">All</option>
+                <option value="buy">Buy</option>
+                <option value="rent">Rent</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="min_price">Min Price (€)</label>
+            <input type="number" id="min_price" name="min_price" placeholder="0">
+        </div>
+
+        <div class="form-group">
+            <label for="max_price">Max Price (€)</label>
+            <input type="number" id="max_price" name="max_price" placeholder="1000000">
+        </div>
+
+        <div class="form-group">
+            <label for="min_rooms">Min Rooms</label>
+            <input type="number" id="min_rooms" name="min_rooms" placeholder="1">
+        </div>
+
+        <div class="form-group">
+            <label for="max_rooms">Max Rooms</label>
+            <input type="number" id="max_rooms" name="max_rooms" placeholder="10">
+        </div>
+
+        <div class="form-group">
+            <label for="sort_by">Sort By</label>
+            <select id="sort_by" name="sort_by">
+                <option value="updated_at">Updated</option>
+                <option value="price">Price</option>
+                <option value="living_area">Area</option>
+                <option value="city">City</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="sort_order">Order</label>
+            <select id="sort_order" name="sort_order">
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn">Search</button>
+        </div>
+    </form>
+</div>
+
+<div id="properties-list" hx-get="/api/properties" hx-trigger="load">
+    <div class="card text-center">
+        <p>Loading properties...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Handle htmx response to render properties
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'properties-list') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        renderProperties(data);
+    }
+});
+
+function renderProperties(data) {
+    const container = document.getElementById('properties-list');
+
+    if (!data.properties || data.properties.length === 0) {
+        container.innerHTML = '<div class="card text-center"><p>No properties found. Try adjusting your filters.</p></div>';
+        return;
+    }
+
+    let html = `<div class="card"><h3>Found ${data.total} properties (showing ${data.properties.length})</h3></div>`;
+
+    data.properties.forEach(prop => {
+        const price = prop.price ? `€${prop.price.toLocaleString()}` : 'Price N/A';
+        const area = prop.living_area ? `${prop.living_area}m²` : 'N/A';
+        const rooms = prop.rooms || 'N/A';
+        const city = prop.city || 'Unknown';
+
+        html += `
+        <div class="property-item">
+            <div class="property-header">
+                <div>
+                    <h3>${prop.address || 'Address not available'}</h3>
+                    <p>${city} ${prop.postal_code || ''}</p>
+                </div>
+                <div class="property-price">${price}</div>
+            </div>
+            <div class="property-details">
+                <div class="property-detail">
+                    <span class="detail-label">Living Area</span>
+                    <span class="detail-value">${area}</span>
+                </div>
+                <div class="property-detail">
+                    <span class="detail-label">Rooms</span>
+                    <span class="detail-value">${rooms}</span>
+                </div>
+                <div class="property-detail">
+                    <span class="detail-label">Bedrooms</span>
+                    <span class="detail-value">${prop.bedrooms || 'N/A'}</span>
+                </div>
+                <div class="property-detail">
+                    <span class="detail-label">Year Built</span>
+                    <span class="detail-value">${prop.year_built || 'N/A'}</span>
+                </div>
+                <div class="property-detail">
+                    <span class="detail-label">Energy Label</span>
+                    <span class="detail-value">${prop.energy_label || 'N/A'}</span>
+                </div>
+                <div class="property-detail">
+                    <span class="detail-label">Type</span>
+                    <span class="detail-value"><span class="badge ${prop.listing_type === 'buy' ? 'badge-success' : 'badge-info'}">${prop.listing_type}</span></span>
+                </div>
+            </div>
+            <div class="mt-2">
+                <a href="${prop.url}" target="_blank" class="btn btn-secondary">View on Funda</a>
+                <a href="/api/properties/${prop.id}" class="btn">Details & History</a>
+            </div>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+</script>
+{% endblock %}
