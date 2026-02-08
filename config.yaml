@@ -1,0 +1,77 @@
+# Funda Property Finder Configuration
+# This file contains scraping and scheduling configuration
+
+# Scraping Settings
+scraping:
+  # Rate limiting (seconds between requests)
+  rate_limit: 3.0
+
+  # Cities to scrape (lowercase, use hyphens for spaces)
+  cities:
+    - amsterdam
+    - rotterdam
+    - den-haag
+    - utrecht
+    - eindhoven
+    - groningen
+    - tilburg
+    - almere
+    - breda
+    - nijmegen
+
+  # Property types to scrape
+  property_types:
+    - buy
+    # - rent  # Uncomment to enable rental scraping
+
+  # Search filters
+  filters:
+    min_price: null  # null means no minimum
+    max_price: null  # null means no maximum
+    min_area: null   # m²
+    max_area: null   # m²
+
+# Scheduling Settings
+scheduling:
+  # Enable automatic scheduled scraping
+  enabled: false
+
+  # Cron expression (when to run scrapes)
+  # Format: "minute hour day month day_of_week"
+  # Examples:
+  #   "0 2 * * *"     - Daily at 2:00 AM
+  #   "0 */6 * * *"   - Every 6 hours
+  #   "0 0 * * 0"     - Weekly on Sunday at midnight
+  cron: "0 2 * * *"
+
+  # Timezone for scheduling
+  timezone: "Europe/Amsterdam"
+
+  # Maximum concurrent scrapes (per schedule run)
+  max_concurrent: 3
+
+# Database Settings
+database:
+  # PostgreSQL connection URL
+  # Format: postgresql://user:password@host:port/database
+  url: "postgresql://localhost/funda"
+
+  # Connection pool settings
+  pool_size: 5
+  max_overflow: 10
+
+# Logging Settings
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+
+  # Log file path (null to disable file logging)
+  file: "logs/funda.log"
+
+  # Log format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # Rotate logs
+  rotation:
+    max_bytes: 10485760  # 10 MB
+    backup_count: 5
