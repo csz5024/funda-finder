@@ -6,7 +6,31 @@ import sys
 
 def cmd_scrape(args):
     """Run a scrape for the given city."""
-    print(f"Scraping {args.city} ({args.type})... [not yet implemented]")
+    from funda_finder.scraper import PropertyType
+    from funda_finder.scraper.orchestrator import ScrapeOrchestrator
+    from funda_finder.config import settings
+
+    property_type = PropertyType.BUY if args.type == "buy" else PropertyType.RENT
+
+    def progress(msg: str):
+        print(f"  {msg}")
+
+    try:
+        orchestrator = ScrapeOrchestrator(rate_limit=settings.rate_limit)
+        meta = orchestrator.run_scrape(
+            city=args.city,
+            property_type=property_type,
+            progress_callback=progress,
+        )
+        print(f"\n✓ Scrape complete (run_id: {meta.run_id})")
+        print(f"  Found: {meta.listings_found}")
+        print(f"  New: {meta.listings_new}")
+        print(f"  Updated: {meta.listings_updated}")
+        if meta.errors:
+            print(f"  Errors: {meta.errors}")
+    except Exception as e:
+        print(f"\n✗ Scrape failed: {e}")
+        sys.exit(1)
 
 
 def cmd_serve(args):
