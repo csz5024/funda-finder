@@ -8,7 +8,7 @@ from typing import Callable, List, Optional
 from sqlalchemy.orm import Session
 
 from funda_finder.db.models import PriceHistory, Property, ScrapeMeta
-from funda_finder.db.session import get_session
+from funda_finder.db.session import get_db
 from funda_finder.scraper import CompositeScraper, PropertyType, RawListing, SearchFilters
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class ScrapeOrchestrator:
             session: Database session (creates new if None)
             rate_limit: Seconds between scrape requests
         """
-        self.session = session or next(get_session())
+        self.session = session or next(get_db())
         self.scraper = CompositeScraper(rate_limit_seconds=rate_limit)
         self.meta: Optional[ScrapeMeta] = None
 
