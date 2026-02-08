@@ -66,17 +66,18 @@ class PyFundaScraper(ScraperInterface):
         # Extract fields from funda API response
         listing_id = str(raw_data.get("global_id", ""))
 
-        # Construct URL if not present (detailed listings have it)
-        url = raw_data.get("url", "")
-        if not url and listing_id:
-            # Construct URL from global_id
-            offering = "koop" if property_type == PropertyType.BUY else "huur"
-            url = f"https://www.funda.nl/{offering}/amsterdam/{listing_id}/"
-
         # Address components
         address = raw_data.get("title", "")
         postal_code = raw_data.get("postcode")
         city = raw_data.get("city", "")
+
+        # Construct URL if not present (detailed listings have it)
+        url = raw_data.get("url", "")
+        if not url and listing_id and city:
+            # Construct URL from global_id and city
+            offering = "koop" if property_type == PropertyType.BUY else "huur"
+            city_slug = city.lower().replace(" ", "-")
+            url = f"https://www.funda.nl/{offering}/{city_slug}/{listing_id}/"
         neighborhood = raw_data.get("neighbourhood")
 
         # Price (already an integer)
