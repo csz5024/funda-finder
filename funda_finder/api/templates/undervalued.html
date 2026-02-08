@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Undervalued Properties - Funda Property Finder{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Potentially Undervalued Properties</h1>
+    <p>Properties ranked by price per square meter. Lower values may indicate better deals.</p>
+    <div class="badge badge-warning mt-2">
+        Note: Full undervalue scoring (price history, market comparisons, z-scores) pending analysis engine completion (ff-3od).
+    </div>
+
+    <form class="filter-form mt-3" hx-get="/api/analysis/undervalued" hx-target="#undervalued-list" hx-trigger="submit">
+        <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" placeholder="e.g., Amsterdam">
+        </div>
+
+        <div class="form-group">
+            <label for="limit">Limit</label>
+            <input type="number" id="limit" name="limit" value="50" min="1" max="200">
+        </div>
+
+        <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn">Search</button>
+        </div>
+    </form>
+</div>
+
+<div id="undervalued-list" hx-get="/api/analysis/undervalued" hx-trigger="load">
+    <div class="card text-center">
+        <p>Loading undervalued properties...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'undervalued-list') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        renderUndervalued(data);
+    }
+});
+
+function renderUndervalued(data) {
+    const container = document.getElementById('undervalued-list');
+
+    if (!data.properties || data.properties.length === 0) {
+        container.innerHTML = '<div class="card text-center"><p>No properties found. Try adjusting your filters.</p></div>';
+        return;
+    }
+
+    let html = `<div class="card">
+        <h3>Found ${data.properties.length} properties</h3>
+        ${data.note ? `<p class="badge badge-info">${data.note}</p>` : ''}
+    </div>`;
+
+    data.properties.forEach((prop, index) => {
+        const price = prop.price ? `€${prop.price.toLocaleString()}` : 'Price N/A';
+        const area = prop.living_area ? `${prop.living_area}m²` : 'N/A';
+        const pricePerSqm = prop.price_per_sqm ? `€${prop.price_per_sqm.toLocaleString()}/m²` : 'N/A';
+        const rank = index + 1;
+
+        html += `
+        <div class="property-item">
+            <div class="property-header">
+                <div>
+                    <span class="badge badge-success">#${rank}</span>
+                    <h3>${prop.address || 'Address not available'}</h3>
+                    <p>${prop.city || 'Unknown'}</p>
+                </div>
+                <div>
+                    <div class="property-price">${price}</div>
+                    <div style="color: #e67e22; font-weight: bold;">${pricePerSqm}</div>
+                </div>
+            </div>
+            <div class="property-details">
+                <div class="property-detail">
+                    <span class="detail-label">Living Area</span>
+                    <span class="detail-value">${area}</span>
+                </div>
+                <div class="property-detail">
+                    <span class="detail-label">Rooms</span>
+                    <span class="detail-value">${prop.rooms || 'N/A'}</span>
+                </div>
+                <div class="property-detail">
+                    <span class="detail-label">Year Built</span>
+                    <span class="detail-value">${prop.year_built || 'N/A'}</span>
+                </div>
+            </div>
+            ${prop.score_explanation ? `<p class="mt-2"><small>${prop.score_explanation}</small></p>` : ''}
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+</script>
+{% endblock %}

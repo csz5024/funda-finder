@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Funda Property Finder{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Welcome to Funda Property Finder</h1>
+    <p>A Dutch real estate analysis tool that helps you discover potentially undervalued properties.</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Browse Properties</div>
+        <p class="mt-2">Search and filter property listings from Funda</p>
+        <a href="/properties" class="btn mt-2">View Properties</a>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Undervalued Properties</div>
+        <p class="mt-2">Discover potentially undervalued listings</p>
+        <a href="/undervalued" class="btn mt-2">Find Deals</a>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Market Statistics</div>
+        <p class="mt-2">View market trends and price analysis</p>
+        <a href="/stats" class="btn mt-2">View Stats</a>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Scrape Status</div>
+        <p class="mt-2">Check data freshness and scrape history</p>
+        <a href="/scrapes" class="btn mt-2">View Status</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Features</h2>
+    <ul>
+        <li><strong>Property Browser:</strong> Search and filter listings by city, price, rooms, and more</li>
+        <li><strong>Price History:</strong> Track how property prices change over time</li>
+        <li><strong>Undervalue Detection:</strong> Statistical analysis to identify potential deals</li>
+        <li><strong>Market Insights:</strong> View average prices, price per m², and market trends</li>
+        <li><strong>Automated Scraping:</strong> Regular updates from Funda.nl</li>
+    </ul>
+</div>
+{% endblock %}

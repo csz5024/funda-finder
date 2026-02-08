@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Market Statistics - Funda Property Finder{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Market Statistics</h1>
+    <p>View market trends and statistical analysis of property prices.</p>
+
+    <form class="filter-form mt-3" id="stats-form">
+        <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" placeholder="Leave empty for all cities">
+        </div>
+
+        <div class="form-group">
+            <label for="listing_type">Type</label>
+            <select id="listing_type" name="listing_type">
+                <option value="">All</option>
+                <option value="buy">Buy</option>
+                <option value="rent">Rent</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="align-self: flex-end;">
+            <button type="submit" class="btn">Update Stats</button>
+        </div>
+    </form>
+</div>
+
+<div id="stats-container">
+    <div class="card text-center">
+        <p>Loading statistics...</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Price Distribution</h2>
+    <div class="chart-container">
+        <canvas id="priceChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let priceChart = null;
+
+async function loadStats() {
+    const form = document.getElementById('stats-form');
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+
+    const response = await fetch(`/api/analysis/stats?${params}`);
+    const data = await response.json();
+
+    renderStats(data);
+}
+
+function renderStats(data) {
+    const container = document.getElementById('stats-container');
+
+    if (data.total_properties === 0) {
+        container.innerHTML = '<div class="card text-center"><p>No properties found matching your criteria.</p></div>';
+        return;
+    }
+
+    const html = `
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Properties</div>
+            <div class="stat-value">${data.total_properties.toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Average Price</div>
+            <div class="stat-value">${data.price.avg ? '€' + Math.round(data.price.avg).toLocaleString() : 'N/A'}</div>
+            <small>Range: €${data.price.min?.toLocaleString() || 'N/A'} - €${data.price.max?.toLocaleString() || 'N/A'}</small>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Median Price</div>
+            <div class="stat-value">${data.price.median ? '€' + Math.round(data.price.median).toLocaleString() : 'N/A'}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Avg Living Area</div>
+            <div class="stat-value">${data.living_area.avg ? Math.round(data.living_area.avg) + 'm²' : 'N/A'}</div>
+            <small>Range: ${data.living_area.min || 'N/A'}m² - ${data.living_area.max || 'N/A'}m²</small>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Avg Price/m²</div>
+            <div class="stat-value">${data.price_per_sqm.avg ? '€' + Math.round(data.price_per_sqm.avg).toLocaleString() : 'N/A'}</div>
+            <small>Range: €${Math.round(data.price_per_sqm.min || 0)} - €${Math.round(data.price_per_sqm.max || 0)}</small>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Median Price/m²</div>
+            <div class="stat-value">${data.price_per_sqm.median ? '€' + Math.round(data.price_per_sqm.median).toLocaleString() : 'N/A'}</div>
+        </div>
+    </div>
+    ${data.note ? `<div class="card"><p class="badge badge-info">${data.note}</p></div>` : ''}
+    `;
+
+    container.innerHTML = html;
+
+    // Update chart
+    updateChart(data);
+}
+
+function updateChart(data) {
+    const ctx = document.getElementById('priceChart');
+
+    if (priceChart) {
+        priceChart.destroy();
+    }
+
+    priceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Min Price', 'Avg Price', 'Median Price', 'Max Price'],
+            datasets: [{
+                label: 'Price (€)',
+                data: [
+                    data.price.min || 0,
+                    data.price.avg || 0,
+                    data.price.median || 0,
+                    data.price.max || 0
+                ],
+                backgroundColor: [
+                    'rgba(52, 152, 219, 0.7)',
+                    'rgba(46, 204, 113, 0.7)',
+                    'rgba(155, 89, 182, 0.7)',
+                    'rgba(231, 76, 60, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(52, 152, 219, 1)',
+                    'rgba(46, 204, 113, 1)',
+                    'rgba(155, 89, 182, 1)',
+                    'rgba(231, 76, 60, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '€' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return '€' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Load stats on page load
+loadStats();
+
+// Reload on form submit
+document.getElementById('stats-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    loadStats();
+});
+</script>
+{% endblock %}
