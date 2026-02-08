@@ -2,9 +2,10 @@
 
 import logging
 import time
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
-from pyfunda import PyFunda
+if TYPE_CHECKING:
+    from pyfunda import PyFunda as PyFundaClient
 
 from .base import (
     PropertyType,
@@ -31,6 +32,9 @@ class PyFundaScraper(ScraperInterface):
         Args:
             rate_limit_seconds: Seconds to wait between requests (default: 3.0)
         """
+        # Lazy import to avoid dependency issues at module load time
+        from pyfunda import PyFunda
+
         self._rate_limit = rate_limit_seconds
         self._last_request_time = 0.0
         self._client = PyFunda()
