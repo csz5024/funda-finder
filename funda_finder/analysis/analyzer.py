@@ -111,7 +111,7 @@ class PropertyAnalyzer:
         prices_sorted = sorted(prices)
         pps_sorted = sorted(price_per_sqm_list)
 
-        median_price = pps_sorted[len(prices_sorted) // 2] if prices_sorted else 0
+        median_price = prices_sorted[len(prices_sorted) // 2] if prices_sorted else 0
         mean_price = sum(prices) / len(prices)
 
         # Standard deviation
