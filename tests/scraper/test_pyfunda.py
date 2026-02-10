@@ -24,12 +24,14 @@ class TestPyFundaScraper:
     def _make_mock_result(self, global_id="123", city="Amsterdam", price=500000):
         """Create a mock Listing result from pyfunda."""
         result = MagicMock()
+        # Real Funda URLs use compound IDs like "huis-{global_id}" not just global_id
+        listing_slug = f"huis-{global_id}"
         result.to_dict.return_value = {
             "global_id": global_id,
             "title": "Test Street 1",
             "postcode": "1234AB",
             "city": city,
-            "url": f"https://www.funda.nl/en/detail/koop/{city.lower()}/{global_id}/",
+            "url": f"https://www.funda.nl/en/detail/koop/{city.lower()}/{listing_slug}/",
             "price": price,
             "living_area": 100,
             "plot_area": 200,
@@ -54,8 +56,9 @@ class TestPyFundaScraper:
         results = self.scraper.search(filters)
 
         assert len(results) == 2
-        assert results[0].listing_id == "id1"
-        assert results[1].listing_id == "id2"
+        # listing_id is extracted from URL, so it should be "huis-{global_id}"
+        assert results[0].listing_id == "huis-id1"
+        assert results[1].listing_id == "huis-id2"
         assert results[0].source == ScraperSource.PYFUNDA
 
     def test_search_normalizes_fields(self):
@@ -66,7 +69,8 @@ class TestPyFundaScraper:
         results = self.scraper.search(filters)
 
         listing = results[0]
-        assert listing.listing_id == "norm-1"
+        # listing_id is extracted from URL, so it should be "huis-{global_id}"
+        assert listing.listing_id == "huis-norm-1"
         assert listing.city == "Rotterdam"
         assert listing.price == 350000
         assert listing.living_area == 100.0
@@ -117,7 +121,8 @@ class TestPyFundaScraper:
         result = self.scraper.get_details("detail-1")
 
         assert result is not None
-        assert result.listing_id == "detail-1"
+        # listing_id is extracted from URL, so it should be "huis-{global_id}"
+        assert result.listing_id == "huis-detail-1"
         self.mock_client.get_listing.assert_called_once_with("detail-1")
 
     def test_get_details_not_found(self):
