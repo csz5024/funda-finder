@@ -89,3 +89,37 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+def reset_engine() -> None:
+    """Reset the singleton engine and session factory.
+
+    This is useful when you need to reconnect to the database or
+    clear cached connections. Particularly important when switching
+    databases or after database operations that affect connections.
+    """
+    global _engine, _SessionLocal
+    if _engine is not None:
+        _engine.dispose()
+        _engine = None
+    _SessionLocal = None
+
+
+def clear_db() -> None:
+    """Delete all data from all tables while preserving schema.
+
+    This truncates all tables in reverse dependency order to avoid
+    foreign key constraint violations. The database schema itself
+    is preserved.
+
+    WARNING: This operation cannot be undone!
+    """
+    from funda_finder.db.models import ScrapeMeta, PriceHistory, Property
+
+    engine = _get_default_engine()
+    with Session(engine) as session:
+        # Delete in reverse dependency order
+        session.query(ScrapeMeta).delete()
+        session.query(PriceHistory).delete()
+        session.query(Property).delete()
+        session.commit()

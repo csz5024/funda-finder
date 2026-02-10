@@ -5,7 +5,7 @@ A Dutch real estate analysis tool that scrapes property listings from [funda.nl]
 ## Features
 
 - **Composite scraper** with automatic fallback: mobile API (`pyfunda`) as primary, HTML scraping (`funda-scraper`) as backup
-- **SQLite database** with SQLAlchemy ORM for persistent storage and price history tracking
+- **PostgreSQL/SQLite database** with SQLAlchemy ORM for persistent storage and price history tracking
 - **Analysis engine** that scores properties against comparable listings to find undervalued ones
 - **FastAPI dashboard** with property browser, price history charts, and market statistics
 
@@ -56,7 +56,7 @@ python -m funda_finder.cli serve
 | Component   | Technology                          |
 |-------------|-------------------------------------|
 | Scraping    | pyfunda (primary), funda-scraper (fallback) |
-| Database    | SQLite + SQLAlchemy + Alembic       |
+| Database    | PostgreSQL (default) or SQLite + SQLAlchemy + Alembic |
 | Analysis    | pandas, numpy                       |
 | Dashboard   | FastAPI + Jinja2 + htmx + Chart.js  |
 | Config      | pydantic-settings                   |
@@ -70,9 +70,25 @@ cp .env.example .env
 ```
 
 Key settings:
-- `FUNDA_DB_PATH` - SQLite database file location (default: `data/funda.db`)
+- `FUNDA_DB_URL` - Database connection URL (default: `postgresql://localhost/funda`)
+- `FUNDA_DB_PATH` - SQLite database file location (fallback: `data/funda.db`)
 - `FUNDA_RATE_LIMIT` - Seconds between scrape requests (default: `3`)
 - `FUNDA_DEFAULT_CITIES` - Comma-separated list of cities to scrape
+
+### Database Management
+
+```bash
+# Check which database you're using
+funda-finder db info
+
+# Clear all data from the database
+funda-finder db clear
+
+# Reset database connections
+funda-finder db reset
+```
+
+See [DATABASE_MANAGEMENT.md](DATABASE_MANAGEMENT.md) for detailed information about database configuration and troubleshooting.
 
 ## License
 
