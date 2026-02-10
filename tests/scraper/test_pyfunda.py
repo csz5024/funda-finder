@@ -44,14 +44,32 @@ class TestPyFundaScraper:
         }
         return result
 
+    def _setup_get_listing(self, mock_results):
+        """Configure get_listing to return detailed results matching search results.
+
+        The search() method calls get_listing(global_id) for each result to
+        fetch detailed data (including tiny_id/URL). This maps global_ids to
+        the corresponding mock results.
+        """
+        result_map = {}
+        for mock_result in mock_results:
+            data = mock_result.to_dict()
+            global_id = data.get("global_id")
+            if global_id:
+                result_map[global_id] = mock_result
+
+        self.mock_client.get_listing.side_effect = lambda gid: result_map.get(gid)
+
     def test_source_property(self):
         assert self.scraper.source == ScraperSource.PYFUNDA
 
     def test_search_returns_listings(self):
-        self.mock_client.search_listing.return_value = [
+        mock_results = [
             self._make_mock_result("id1"),
             self._make_mock_result("id2"),
         ]
+        self.mock_client.search_listing.return_value = mock_results
+        self._setup_get_listing(mock_results)
         filters = SearchFilters(city="Amsterdam", property_type=PropertyType.BUY)
         results = self.scraper.search(filters)
 
@@ -62,9 +80,11 @@ class TestPyFundaScraper:
         assert results[0].source == ScraperSource.PYFUNDA
 
     def test_search_normalizes_fields(self):
-        self.mock_client.search_listing.return_value = [
+        mock_results = [
             self._make_mock_result(global_id="norm-1", city="Rotterdam", price=350000)
         ]
+        self.mock_client.search_listing.return_value = mock_results
+        self._setup_get_listing(mock_results)
         filters = SearchFilters(city="Rotterdam", property_type=PropertyType.BUY)
         results = self.scraper.search(filters)
 
@@ -82,9 +102,11 @@ class TestPyFundaScraper:
         assert listing.neighborhood == "Centrum"
 
     def test_search_max_results(self):
-        self.mock_client.search_listing.return_value = [
+        mock_results = [
             self._make_mock_result(f"id{i}") for i in range(10)
         ]
+        self.mock_client.search_listing.return_value = mock_results
+        self._setup_get_listing(mock_results)
         filters = SearchFilters(
             city="Amsterdam", property_type=PropertyType.BUY, max_results=3
         )
@@ -104,9 +126,11 @@ class TestPyFundaScraper:
             self.scraper.search(filters)
 
     def test_search_rent_type(self):
-        self.mock_client.search_listing.return_value = [
+        mock_results = [
             self._make_mock_result("rent-1", price=1500)
         ]
+        self.mock_client.search_listing.return_value = mock_results
+        self._setup_get_listing(mock_results)
         filters = SearchFilters(city="Amsterdam", property_type=PropertyType.RENT)
         results = self.scraper.search(filters)
 
@@ -146,6 +170,7 @@ class TestPyFundaScraper:
             "url": "",  # empty URL
         }
         self.mock_client.search_listing.return_value = [result]
+        self._setup_get_listing([result])
         filters = SearchFilters(city="Amsterdam", property_type=PropertyType.BUY)
         results = self.scraper.search(filters)
 
@@ -165,6 +190,7 @@ class TestPyFundaScraper:
             "url": "https://funda.nl/test",
         }
         self.mock_client.search_listing.return_value = [result]
+        self._setup_get_listing([result])
         filters = SearchFilters(city="Utrecht", property_type=PropertyType.BUY)
         results = self.scraper.search(filters)
 
