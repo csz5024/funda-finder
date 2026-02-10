@@ -72,7 +72,7 @@ class PyFundaScraper(ScraperInterface):
 
         # Extract listing_id from URL (like HTML scraper does)
         # Funda URLs have format: .../koop/city/huis-42534234/ or .../en/detail/koop/city/huis-42534234/
-        # The listing_id is the second-to-last segment (before trailing slash)
+        # The listing_id is the last segment (before trailing slash)
         if url:
             listing_id = str(url.rstrip("/").split("/")[-1] or "")
         else:
@@ -217,11 +217,30 @@ class PyFundaScraper(ScraperInterface):
             if filters.max_results and len(results) > filters.max_results:
                 results = results[: filters.max_results]
 
-            # Convert Listing objects to dicts and normalize
-            listings = [
-                self._normalize_listing(result.to_dict(), filters.property_type)
-                for result in results
-            ]
+            # Fetch detailed listings to get correct tiny_id and URL
+            # Search results lack tiny_id and url fields, so we must fetch details
+            listings = []
+            for result in results:
+                try:
+                    global_id = result.to_dict().get("global_id")
+                    if not global_id:
+                        logger.warning("Search result missing global_id, skipping")
+                        continue
+
+                    # Rate limit between detail fetches
+                    self._rate_limit_wait()
+
+                    # Fetch detailed listing with correct tiny_id and url
+                    detailed = self._client.get_listing(global_id)
+                    if detailed:
+                        listings.append(
+                            self._normalize_listing(detailed.to_dict(), filters.property_type)
+                        )
+                    else:
+                        logger.warning(f"Could not fetch details for global_id {global_id}")
+                except Exception as e:
+                    logger.warning(f"Failed to fetch details for result: {e}")
+                    continue
 
             logger.info(f"Found {len(listings)} listings via pyfunda")
             return listings
