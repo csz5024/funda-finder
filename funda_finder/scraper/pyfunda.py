@@ -81,7 +81,7 @@ class PyFundaScraper(ScraperInterface):
             # Construct URL from global_id and city
             offering = "koop" if property_type == PropertyType.BUY else "huur"
             city_slug = city.lower().replace(" ", "-")
-            url = f"https://www.funda.nl/{offering}/{city_slug}/{listing_id}/"
+            url = f"https://www.funda.nl/en/detail/{offering}/{city_slug}/{listing_id}/"
         neighborhood = raw_data.get("neighbourhood")
 
         # Price (already an integer)

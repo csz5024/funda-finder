@@ -49,9 +49,10 @@ def make_raw_listing(
     **kwargs,
 ) -> RawListing:
     """Factory for creating test RawListing instances."""
+    offering = "koop" if property_type == PropertyType.BUY else "huur"
     return RawListing(
         listing_id=listing_id,
-        url=f"https://www.funda.nl/koop/{city.lower()}/huis-{listing_id}/",
+        url=f"https://www.funda.nl/en/detail/{offering}/{city.lower()}/{listing_id}/",
         address=address,
         city=city,
         price=price,
@@ -73,15 +74,18 @@ def make_property(
     **kwargs,
 ) -> Property:
     """Factory for creating test Property instances."""
+    # Determine offering type from listing_type if provided, default to "buy"
+    listing_type = kwargs.get("listing_type", "buy")
+    offering = "koop" if listing_type == "buy" else "huur"
     defaults = dict(
         funda_id=funda_id,
-        url=f"https://www.funda.nl/koop/{city.lower()}/huis-{funda_id}/",
+        url=f"https://www.funda.nl/en/detail/{offering}/{city.lower()}/{funda_id}/",
         address=address,
         city=city,
         price=price,
         living_area=living_area,
         rooms=rooms,
-        listing_type="buy",
+        listing_type=listing_type,
         status="active",
         scraped_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),

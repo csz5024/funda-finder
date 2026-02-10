@@ -29,7 +29,7 @@ class TestPyFundaScraper:
             "title": "Test Street 1",
             "postcode": "1234AB",
             "city": city,
-            "url": f"https://www.funda.nl/koop/{city.lower()}/{global_id}/",
+            "url": f"https://www.funda.nl/en/detail/koop/{city.lower()}/{global_id}/",
             "price": price,
             "living_area": 100,
             "plot_area": 200,
@@ -147,6 +147,7 @@ class TestPyFundaScraper:
         assert "funda.nl" in results[0].url
         assert "amsterdam" in results[0].url.lower()
         assert "koop" in results[0].url
+        assert "/en/detail/" in results[0].url
 
     def test_normalize_handles_missing_optional_fields(self):
         """Gracefully handle missing optional fields in API response."""

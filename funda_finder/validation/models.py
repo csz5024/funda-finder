@@ -22,7 +22,7 @@ class PropertyListing(BaseModel):
     Example:
         listing = PropertyListing(
             funda_id="abc123",
-            url="https://www.funda.nl/koop/amsterdam/huis-abc123/",
+            url="https://www.funda.nl/en/detail/koop/amsterdam/abc123/",
             city="Amsterdam",
             price=450000,
             listing_type="buy",
@@ -232,7 +232,7 @@ class PropertyListing(BaseModel):
         json_schema_extra = {
             "example": {
                 "funda_id": "abc123",
-                "url": "https://www.funda.nl/koop/amsterdam/huis-abc123/",
+                "url": "https://www.funda.nl/en/detail/koop/amsterdam/abc123/",
                 "city": "Amsterdam",
                 "price": 450000,
                 "listing_type": "buy",
