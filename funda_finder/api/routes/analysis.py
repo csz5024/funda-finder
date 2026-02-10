@@ -51,6 +51,11 @@ async def get_undervalued_properties(
     # Format response
     properties = []
     for score_obj in results:
+        # Get the full property object for additional fields
+        property = db.execute(
+            select(Property).where(Property.id == score_obj.property_id)
+        ).scalar_one()
+
         prop_data = {
             "id": score_obj.property_id,
             "funda_id": score_obj.funda_id,
@@ -63,6 +68,12 @@ async def get_undervalued_properties(
             "percentile_rank": score_obj.percentile_rank,
             "explanation": score_obj.explanation,
             "score_components": score_obj.score_components,
+            "url": property.url,
+            "bedrooms": property.bedrooms,
+            "bathrooms": property.bathrooms,
+            "rooms": property.rooms,
+            "year_built": property.year_built,
+            "energy_label": property.energy_label,
         }
 
         # Include comparable group stats if available

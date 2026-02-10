@@ -5,9 +5,16 @@
 {% block content %}
 <div class="card">
     <h1>Potentially Undervalued Properties</h1>
-    <p>Properties ranked by price per square meter. Lower values may indicate better deals.</p>
-    <div class="badge badge-warning mt-2">
-        Note: Full undervalue scoring (price history, market comparisons, z-scores) pending analysis engine completion (ff-3od).
+    <p>Properties ranked by comprehensive undervalue score. Higher scores indicate better potential deals.</p>
+
+    <div class="badge badge-info mt-2">
+        <strong>How it works:</strong> Properties are scored 0-100 based on three factors:
+        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+            <li><strong>Price/m² Analysis (40%)</strong>: Compares property price per square meter against similar properties using z-score statistics</li>
+            <li><strong>Price Drops (40%)</strong>: Recent price reductions in the last 90 days indicate motivated sellers</li>
+            <li><strong>Days on Market (20%)</strong>: Properties listed longer may be priced more favorably</li>
+        </ul>
+        Higher scores suggest properties that may be undervalued relative to comparable listings.
     </div>
 
     <form class="filter-form mt-3" hx-get="/api/analysis/undervalued" hx-target="#undervalued-list" hx-trigger="submit">
@@ -61,12 +68,25 @@ function renderUndervalued(data) {
         const area = prop.living_area ? `${prop.living_area}m²` : 'N/A';
         const pricePerSqm = prop.price_per_sqm ? `€${prop.price_per_sqm.toLocaleString()}/m²` : 'N/A';
         const rank = index + 1;
+        const score = prop.undervalue_score || 0;
+
+        // Determine score badge color based on score value
+        let scoreBadgeClass = 'badge-warning';
+        if (score >= 70) scoreBadgeClass = 'badge-success';
+        else if (score >= 50) scoreBadgeClass = 'badge-info';
+
+        // Build property URL - make entire card clickable
+        const url = prop.url || '#';
+        const clickableAttr = url !== '#' ? `onclick="window.open('${url}', '_blank')" style="cursor: pointer;"` : '';
 
         html += `
-        <div class="property-item">
+        <div class="property-item" ${clickableAttr}>
             <div class="property-header">
                 <div>
                     <span class="badge badge-success">#${rank}</span>
+                    <span class="badge ${scoreBadgeClass}" style="margin-left: 0.5rem;">
+                        Score: ${score.toFixed(1)}
+                    </span>
                     <h3>${prop.address || 'Address not available'}</h3>
                     <p>${prop.city || 'Unknown'}</p>
                 </div>
@@ -81,15 +101,26 @@ function renderUndervalued(data) {
                     <span class="detail-value">${area}</span>
                 </div>
                 <div class="property-detail">
-                    <span class="detail-label">Rooms</span>
-                    <span class="detail-value">${prop.rooms || 'N/A'}</span>
+                    <span class="detail-label">Bedrooms</span>
+                    <span class="detail-value">${prop.bedrooms || 'N/A'}</span>
+                </div>
+                <div class="property-detail">
+                    <span class="detail-label">Bathrooms</span>
+                    <span class="detail-value">${prop.bathrooms || 'N/A'}</span>
                 </div>
                 <div class="property-detail">
                     <span class="detail-label">Year Built</span>
                     <span class="detail-value">${prop.year_built || 'N/A'}</span>
                 </div>
+                ${prop.energy_label ? `
+                <div class="property-detail">
+                    <span class="detail-label">Energy Label</span>
+                    <span class="detail-value">${prop.energy_label}</span>
+                </div>
+                ` : ''}
             </div>
-            ${prop.score_explanation ? `<p class="mt-2"><small>${prop.score_explanation}</small></p>` : ''}
+            ${prop.explanation ? `<p class="mt-2"><small><strong>Analysis:</strong> ${prop.explanation}</small></p>` : ''}
+            ${url !== '#' ? `<p class="mt-1"><small style="color: #3498db;">🔗 Click to view on Funda.nl</small></p>` : ''}
         </div>
         `;
     });
