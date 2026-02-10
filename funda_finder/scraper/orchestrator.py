@@ -33,6 +33,7 @@ class ScrapeOrchestrator:
         city: str,
         property_type: PropertyType = PropertyType.BUY,
         progress_callback: Optional[Callable[[str], None]] = None,
+        max_pages: Optional[int] = None,
     ) -> ScrapeMeta:
         """Execute a scrape run for the given city.
 
@@ -40,6 +41,7 @@ class ScrapeOrchestrator:
             city: City to scrape (e.g., "amsterdam")
             property_type: Type of properties to scrape
             progress_callback: Optional callback for progress updates
+            max_pages: Number of pages to scrape (15 results per page, default: 1)
 
         Returns:
             ScrapeMeta object with run statistics
@@ -58,7 +60,7 @@ class ScrapeOrchestrator:
             report(f"Starting scrape: {city} ({property_type.value})")
 
             # Search for listings
-            filters = SearchFilters(city=city, property_type=property_type)
+            filters = SearchFilters(city=city, property_type=property_type, max_pages=max_pages)
             listings = self.scraper.search(filters)
 
             self.meta.listings_found = len(listings)

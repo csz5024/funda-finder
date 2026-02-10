@@ -6,6 +6,37 @@
 <div class="card">
     <h1>Property Listings</h1>
 
+    <!-- Scrape Controls -->
+    <div class="scrape-controls" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+        <h3 style="margin-top: 0;">Scrape New Properties</h3>
+        <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="margin: 0;">
+                <label for="scrape-city">City</label>
+                <select id="scrape-city" style="width: 150px;">
+                    <option value="amsterdam">Amsterdam</option>
+                    <option value="rotterdam">Rotterdam</option>
+                    <option value="den-haag">Den Haag</option>
+                    <option value="utrecht">Utrecht</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label for="scrape-type">Type</label>
+                <select id="scrape-type" style="width: 100px;">
+                    <option value="buy">Buy</option>
+                    <option value="rent">Rent</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label for="scrape-pages">Pages (15 each)</label>
+                <input type="number" id="scrape-pages" value="10" min="1" max="100" style="width: 80px;">
+            </div>
+            <button onclick="triggerScrape()" class="btn" id="scrape-btn">
+                🔄 Scrape Properties
+            </button>
+        </div>
+        <div id="scrape-status" style="margin-top: 10px; font-size: 14px;"></div>
+    </div>
+
     <form class="filter-form" hx-get="/api/properties" hx-target="#properties-list" hx-trigger="submit, change">
         <div class="form-group">
             <label for="city">City</label>
@@ -142,6 +173,64 @@ function renderProperties(data) {
     });
 
     container.innerHTML = html;
+}
+
+// Trigger scrape function
+async function triggerScrape() {
+    const city = document.getElementById('scrape-city').value;
+    const propertyType = document.getElementById('scrape-type').value;
+    const maxPages = parseInt(document.getElementById('scrape-pages').value);
+    const statusDiv = document.getElementById('scrape-status');
+    const btn = document.getElementById('scrape-btn');
+
+    // Validate
+    if (maxPages < 1 || maxPages > 100) {
+        statusDiv.innerHTML = '<span style="color: red;">❌ Pages must be between 1 and 100</span>';
+        return;
+    }
+
+    // Disable button
+    btn.disabled = true;
+    btn.textContent = '⏳ Starting scrape...';
+    statusDiv.innerHTML = '<span style="color: blue;">⏳ Starting scrape...</span>';
+
+    try {
+        const response = await fetch('/api/scrape/trigger', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                city: city,
+                property_type: propertyType,
+                max_pages: maxPages
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            statusDiv.innerHTML = `
+                <span style="color: green;">✅ ${data.message}</span><br>
+                <small>Estimated: ~${data.estimated_properties} properties in ~${data.estimated_minutes} minutes</small><br>
+                <small>Check status at <a href="/scrapes">/scrapes</a> or refresh this page when complete</small>
+            `;
+
+            // Re-enable button after 10 seconds
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = '🔄 Scrape Properties';
+            }, 10000);
+        } else {
+            statusDiv.innerHTML = `<span style="color: red;">❌ Error: ${data.detail}</span>`;
+            btn.disabled = false;
+            btn.textContent = '🔄 Scrape Properties';
+        }
+    } catch (error) {
+        statusDiv.innerHTML = `<span style="color: red;">❌ Network error: ${error.message}</span>`;
+        btn.disabled = false;
+        btn.textContent = '🔄 Scrape Properties';
+    }
 }
 </script>
 {% endblock %}

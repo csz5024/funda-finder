@@ -132,6 +132,7 @@ class SearchFilters:
     max_price: Optional[int] = None
     min_rooms: Optional[int] = None
     max_results: Optional[int] = None
+    max_pages: Optional[int] = None  # Number of pages to fetch (15 results per page)
 
 
 class ScraperInterface(ABC):

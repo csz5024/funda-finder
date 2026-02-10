@@ -203,15 +203,35 @@ class PyFundaScraper(ScraperInterface):
             # Build search parameters for funda API
             offering_type = "buy" if filters.property_type == PropertyType.BUY else "rent"
 
-            # Call funda search_listing method
-            # Returns list of Listing objects
-            results = self._client.search_listing(
-                location=filters.city,
-                offering_type=offering_type,
-                price_min=filters.min_price,
-                price_max=filters.max_price,
-                # Note: funda API doesn't have min_rooms in search
-            )
+            # Fetch multiple pages if requested (default: 1 page = 15 results)
+            max_pages = filters.max_pages or 1
+            all_results = []
+
+            for page in range(max_pages):
+                # Call funda search_listing method with page number
+                # Returns list of Listing objects (15 per page)
+                page_results = self._client.search_listing(
+                    location=filters.city,
+                    offering_type=offering_type,
+                    price_min=filters.min_price,
+                    price_max=filters.max_price,
+                    page=page,
+                    # Note: funda API doesn't have min_rooms in search
+                )
+
+                if not page_results:
+                    # No more results, stop pagination
+                    logger.info(f"No more results at page {page}, stopping pagination")
+                    break
+
+                all_results.extend(page_results)
+                logger.info(f"Fetched page {page}: {len(page_results)} results (total: {len(all_results)})")
+
+                # Rate limit between pages (except after last page)
+                if page < max_pages - 1 and page_results:
+                    self._rate_limit_wait()
+
+            results = all_results
 
             # Limit results if specified
             if filters.max_results and len(results) > filters.max_results:
