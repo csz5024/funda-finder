@@ -50,6 +50,8 @@ def make_raw_listing(
 ) -> RawListing:
     """Factory for creating test RawListing instances."""
     offering = "koop" if property_type == PropertyType.BUY else "huur"
+    # Use realistic Funda URL format with compound IDs like "huis-{listing_id}"
+    # listing_id should already be in the right format (e.g., "huis-123" or "test-123")
     return RawListing(
         listing_id=listing_id,
         url=f"https://www.funda.nl/en/detail/{offering}/{city.lower()}/{listing_id}/",
@@ -77,6 +79,7 @@ def make_property(
     # Determine offering type from listing_type if provided, default to "buy"
     listing_type = kwargs.get("listing_type", "buy")
     offering = "koop" if listing_type == "buy" else "huur"
+    # Use realistic Funda URL format - funda_id should already be in compound format (e.g., "huis-123")
     defaults = dict(
         funda_id=funda_id,
         url=f"https://www.funda.nl/en/detail/{offering}/{city.lower()}/{funda_id}/",
