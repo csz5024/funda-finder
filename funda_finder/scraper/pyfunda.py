@@ -67,21 +67,20 @@ class PyFundaScraper(ScraperInterface):
         Returns:
             Normalized listing
         """
-        # Extract fields from funda API response
-        listing_id = str(raw_data.get("global_id", ""))
+        # Extract listing_id from URL (contains tiny_id) or fall back to global_id
+        url = raw_data.get("url", "")
+        if url:
+            # Extract tiny_id from URL (last segment before trailing slash)
+            # URL format: https://www.funda.nl/detail/koop/amsterdam/address/43232194/
+            listing_id = str(url.rstrip("/").split("/")[-1] or "")
+        else:
+            # Fall back to global_id (only when URL not available)
+            listing_id = str(raw_data.get("global_id", ""))
 
         # Address components
         address = raw_data.get("title", "")
         postal_code = raw_data.get("postcode")
         city = raw_data.get("city", "")
-
-        # Construct URL if not present (detailed listings have it)
-        url = raw_data.get("url", "")
-        if not url and listing_id and city:
-            # Construct URL from global_id and city
-            offering = "koop" if property_type == PropertyType.BUY else "huur"
-            city_slug = city.lower().replace(" ", "-")
-            url = f"https://www.funda.nl/{offering}/{city_slug}/{listing_id}/"
         neighborhood = raw_data.get("neighbourhood")
 
         # Price (already an integer)
@@ -159,11 +158,30 @@ class PyFundaScraper(ScraperInterface):
             if filters.max_results and len(results) > filters.max_results:
                 results = results[: filters.max_results]
 
-            # Convert Listing objects to dicts and normalize
-            listings = [
-                self._normalize_listing(result.to_dict(), filters.property_type)
-                for result in results
-            ]
+            # Fetch detailed listings to get correct tiny_id and URL
+            # Search results lack tiny_id and url fields, so we must fetch details
+            listings = []
+            for result in results:
+                try:
+                    global_id = result.to_dict().get("global_id")
+                    if not global_id:
+                        logger.warning("Search result missing global_id, skipping")
+                        continue
+
+                    # Rate limit between detail fetches
+                    self._rate_limit_wait()
+
+                    # Fetch detailed listing with correct tiny_id and url
+                    detailed = self._client.get_listing(global_id)
+                    if detailed:
+                        listings.append(
+                            self._normalize_listing(detailed.to_dict(), filters.property_type)
+                        )
+                    else:
+                        logger.warning(f"Could not fetch details for global_id {global_id}")
+                except Exception as e:
+                    logger.warning(f"Failed to fetch details for result: {e}")
+                    continue
 
             logger.info(f"Found {len(listings)} listings via pyfunda")
             return listings
