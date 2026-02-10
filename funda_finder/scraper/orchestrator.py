@@ -129,11 +129,27 @@ class ScrapeOrchestrator:
                 plot_area=int(listing.plot_area) if listing.plot_area else None,
                 rooms=listing.num_rooms,
                 bedrooms=listing.num_bedrooms,
+                bathrooms=listing.num_bathrooms,
                 year_built=listing.construction_year,
                 energy_label=listing.energy_label,
+                construction_type=listing.construction_type,
+                property_subtype=listing.property_subtype,
                 listing_type=listing.property_type.value,
                 status="active",
+                lat=listing.latitude,
+                lon=listing.longitude,
                 description=listing.description,
+                photos_json=json.dumps(listing.photos) if listing.photos else None,
+                has_garden="yes" if listing.has_garden else "no" if listing.has_garden is False else None,
+                has_parking="yes" if listing.has_parking else "no" if listing.has_parking is False else None,
+                has_balcony="yes" if listing.has_balcony else "no" if listing.has_balcony is False else None,
+                has_garage="yes" if listing.has_garage else "no" if listing.has_garage is False else None,
+                agent_name=listing.agent_name,
+                agent_phone=listing.agent_phone,
+                agent_email=listing.agent_email,
+                agency_name=listing.agency_name,
+                listing_date=listing.listing_date,
+                days_on_market=listing.days_on_market,
                 raw_json=json.dumps(listing.raw_data),
                 scraped_at=listing.scraped_at,
                 updated_at=datetime.utcnow(),
@@ -166,9 +182,30 @@ class ScrapeOrchestrator:
             )
             existing.rooms = listing.num_rooms or existing.rooms
             existing.bedrooms = listing.num_bedrooms or existing.bedrooms
+            existing.bathrooms = listing.num_bathrooms or existing.bathrooms
             existing.year_built = listing.construction_year or existing.year_built
             existing.energy_label = listing.energy_label or existing.energy_label
+            existing.construction_type = listing.construction_type or existing.construction_type
+            existing.property_subtype = listing.property_subtype or existing.property_subtype
+            existing.lat = listing.latitude or existing.lat
+            existing.lon = listing.longitude or existing.lon
             existing.description = listing.description or existing.description
+            if listing.photos:
+                existing.photos_json = json.dumps(listing.photos)
+            if listing.has_garden is not None:
+                existing.has_garden = "yes" if listing.has_garden else "no"
+            if listing.has_parking is not None:
+                existing.has_parking = "yes" if listing.has_parking else "no"
+            if listing.has_balcony is not None:
+                existing.has_balcony = "yes" if listing.has_balcony else "no"
+            if listing.has_garage is not None:
+                existing.has_garage = "yes" if listing.has_garage else "no"
+            existing.agent_name = listing.agent_name or existing.agent_name
+            existing.agent_phone = listing.agent_phone or existing.agent_phone
+            existing.agent_email = listing.agent_email or existing.agent_email
+            existing.agency_name = listing.agency_name or existing.agency_name
+            existing.listing_date = listing.listing_date or existing.listing_date
+            existing.days_on_market = listing.days_on_market or existing.days_on_market
             existing.raw_json = json.dumps(listing.raw_data)
             existing.status = "active"  # Re-activate if it was delisted
             existing.updated_at = datetime.utcnow()

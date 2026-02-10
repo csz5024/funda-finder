@@ -49,9 +49,34 @@ class RawListing:
     # Building details
     construction_year: Optional[int] = None
     energy_label: Optional[str] = None
+    construction_type: Optional[str] = None  # e.g., "brick", "wood", etc.
+    property_subtype: Optional[str] = None  # e.g., "apartment", "villa", etc.
 
     # Description
     description: Optional[str] = None
+
+    # GPS coordinates
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+    # Property features
+    has_garden: Optional[bool] = None
+    has_parking: Optional[bool] = None
+    has_balcony: Optional[bool] = None
+    has_garage: Optional[bool] = None
+
+    # Photos
+    photos: List[str] = field(default_factory=list)  # List of photo URLs
+
+    # Agent details
+    agent_name: Optional[str] = None
+    agent_phone: Optional[str] = None
+    agent_email: Optional[str] = None
+    agency_name: Optional[str] = None
+
+    # Listing metadata
+    listing_date: Optional[datetime] = None
+    days_on_market: Optional[int] = None
 
     # Metadata
     source: ScraperSource = ScraperSource.PYFUNDA
@@ -76,7 +101,22 @@ class RawListing:
             "num_bathrooms": self.num_bathrooms,
             "construction_year": self.construction_year,
             "energy_label": self.energy_label,
+            "construction_type": self.construction_type,
+            "property_subtype": self.property_subtype,
             "description": self.description,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "has_garden": self.has_garden,
+            "has_parking": self.has_parking,
+            "has_balcony": self.has_balcony,
+            "has_garage": self.has_garage,
+            "photos": self.photos,
+            "agent_name": self.agent_name,
+            "agent_phone": self.agent_phone,
+            "agent_email": self.agent_email,
+            "agency_name": self.agency_name,
+            "listing_date": self.listing_date.isoformat() if self.listing_date else None,
+            "days_on_market": self.days_on_market,
             "source": self.source.value,
             "scraped_at": self.scraped_at.isoformat(),
             "raw_data": self.raw_data,

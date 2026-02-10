@@ -37,12 +37,31 @@ class Property(Base):
     bathrooms = Column(Integer)
     year_built = Column(Integer, index=True)
     energy_label = Column(String, index=True)
+    construction_type = Column(String)  # e.g., "brick", "wood", etc.
+    property_subtype = Column(String)  # e.g., "apartment", "villa", etc.
     listing_type = Column(String, nullable=False, index=True)  # "buy" or "rent"
     status = Column(String, default="active", index=True)
     lat = Column(Float)
     lon = Column(Float)
     description = Column(Text)
     photos_json = Column(Text)  # JSON array of photo URLs
+
+    # Property features
+    has_garden = Column(String)  # Store as string to handle "yes"/"no"/"unknown"
+    has_parking = Column(String)
+    has_balcony = Column(String)
+    has_garage = Column(String)
+
+    # Agent details
+    agent_name = Column(String)
+    agent_phone = Column(String)
+    agent_email = Column(String)
+    agency_name = Column(String)
+
+    # Listing metadata
+    listing_date = Column(DateTime)
+    days_on_market = Column(Integer)
+
     raw_json = Column(Text)  # full scraped payload
     scraped_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
