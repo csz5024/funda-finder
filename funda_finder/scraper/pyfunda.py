@@ -67,21 +67,22 @@ class PyFundaScraper(ScraperInterface):
         Returns:
             Normalized listing
         """
-        # Extract fields from funda API response
-        listing_id = str(raw_data.get("global_id", ""))
+        # Get URL from API (should always be present)
+        url = raw_data.get("url", "")
+
+        # Extract listing_id from URL (like HTML scraper does)
+        # Funda URLs have format: .../koop/city/huis-42534234/ or .../en/detail/koop/city/huis-42534234/
+        # The listing_id is the second-to-last segment (before trailing slash)
+        if url:
+            listing_id = str(url.rstrip("/").split("/")[-1] or "")
+        else:
+            # Fallback to global_id if URL is not available
+            listing_id = str(raw_data.get("global_id", ""))
 
         # Address components
         address = raw_data.get("title", "")
         postal_code = raw_data.get("postcode")
         city = raw_data.get("city", "")
-
-        # Construct URL if not present (detailed listings have it)
-        url = raw_data.get("url", "")
-        if not url and listing_id and city:
-            # Construct URL from global_id and city with /en/detail/ path for English version
-            offering = "koop" if property_type == PropertyType.BUY else "huur"
-            city_slug = city.lower().replace(" ", "-")
-            url = f"https://www.funda.nl/en/detail/{offering}/{city_slug}/{listing_id}/"
         neighborhood = raw_data.get("neighbourhood")
 
         # Price (already an integer)

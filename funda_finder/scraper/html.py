@@ -85,8 +85,10 @@ class HtmlScraper(ScraperInterface):
         """
         # Extract fields from funda-scraper response
         # Field names based on funda-scraper library structure
-        listing_id = str(raw_data.get("url", "").split("/")[-2] or "")
         url = raw_data.get("url", "")
+        # Extract listing_id from URL (second-to-last segment handles trailing slash)
+        # Funda URLs: .../koop/city/huis-42534234/ -> listing_id is "huis-42534234"
+        listing_id = str(url.rstrip("/").split("/")[-1] or "")
 
         # Address components
         address = raw_data.get("address", "")
