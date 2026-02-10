@@ -1,7 +1,25 @@
 # Scraping
 pyfunda>=2.2.0
-funda-scraper>=1.2.0
+# funda-scraper>=1.2.0  # NOTE: See installation instructions below
 urllib3>=1.26.18,<2  # funda-scraper compat; >=1.26.18 needed for Python 3.13
+
+# INSTALLATION NOTE: funda-scraper dependency conflict
+# ====================================================
+# funda-scraper 1.2.1 has a strict pin on urllib3==1.26 (exact 1.26.0), but
+# we need urllib3>=1.26.18 for Python 3.13 compatibility. This creates a
+# dependency conflict that pip cannot resolve.
+#
+# WORKAROUND: Install dependencies in this order:
+#   1. Create virtual environment: python3 -m venv .venv && source .venv/bin/activate
+#   2. Install requirements without funda-scraper: grep -v "funda-scraper" requirements.txt | pip install -r /dev/stdin
+#   3. Install funda-scraper without its deps: pip install --no-deps funda-scraper
+#   4. Install funda-scraper dependencies: pip install beautifulsoup4 requests diot tqdm lxml
+#
+# This works because urllib3 1.26.20 still contains urllib3.packages.six that
+# funda-scraper depends on, despite funda-scraper's strict pin on 1.26.0.
+#
+# Alternative: funda-scraper is only used as fallback when pyfunda fails.
+# For development without HTML fallback, skip funda-scraper installation entirely.
 
 # Database
 sqlalchemy>=2.0

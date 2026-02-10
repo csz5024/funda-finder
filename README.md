@@ -37,12 +37,12 @@ funda_finder/
 ## Quick Start
 
 ```bash
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate
+# Install dependencies (uses install.sh to handle dependency conflicts)
+./install.sh
 
-# Install dependencies
-pip install -r requirements.txt
+# Or manually:
+# python -m venv .venv && source .venv/bin/activate
+# See requirements.txt for manual installation workaround
 
 # Run a scrape
 python -m funda_finder.cli scrape --city amsterdam --type buy
