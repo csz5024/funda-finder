@@ -70,9 +70,12 @@ class ScrapeOrchestrator:
                     is_new = self._process_listing(listing)
                     action = "new" if is_new else "updated"
                     report(f"[{idx}/{len(listings)}] {listing.address} ({action})")
+                    self.session.commit()
                 except Exception as e:
                     logger.error(f"Error processing listing {listing.listing_id}: {e}")
+                    self.session.rollback()
                     self.meta.errors += 1
+                    self.session.commit()
 
             # Mark delisted properties
             delisted_count = self._mark_delisted(city, property_type, listings)
@@ -181,7 +184,6 @@ class ScrapeOrchestrator:
 
             self.meta.listings_updated += 1
 
-        self.session.commit()
         return is_new
 
     def _mark_delisted(
