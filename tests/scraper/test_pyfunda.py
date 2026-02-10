@@ -29,7 +29,7 @@ class TestPyFundaScraper:
             "title": "Test Street 1",
             "postcode": "1234AB",
             "city": city,
-            "url": f"https://www.funda.nl/koop/{city.lower()}/{global_id}/",
+            "url": f"https://www.funda.nl/en/detail/koop/{city.lower()}/{global_id}/",
             "price": price,
             "living_area": 100,
             "plot_area": 200,

@@ -51,7 +51,7 @@ def make_raw_listing(
     """Factory for creating test RawListing instances."""
     return RawListing(
         listing_id=listing_id,
-        url=f"https://www.funda.nl/koop/{city.lower()}/huis-{listing_id}/",
+        url=f"https://www.funda.nl/en/detail/koop/{city.lower()}/huis-{listing_id}/",
         address=address,
         city=city,
         price=price,
@@ -75,7 +75,7 @@ def make_property(
     """Factory for creating test Property instances."""
     defaults = dict(
         funda_id=funda_id,
-        url=f"https://www.funda.nl/koop/{city.lower()}/huis-{funda_id}/",
+        url=f"https://www.funda.nl/en/detail/koop/{city.lower()}/huis-{funda_id}/",
         address=address,
         city=city,
         price=price,

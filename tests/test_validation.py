@@ -15,7 +15,7 @@ class TestPropertyListingRequired:
         """Minimal valid listing with only required fields."""
         listing = PropertyListing(
             funda_id="abc123",
-            url="https://www.funda.nl/koop/amsterdam/huis-abc123/",
+            url="https://www.funda.nl/en/detail/koop/amsterdam/huis-abc123/",
             city="Amsterdam",
             price=450000,
             listing_type="buy",

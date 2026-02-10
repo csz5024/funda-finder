@@ -37,7 +37,7 @@ def create_test_listing(
     """Create a test RawListing."""
     return RawListing(
         listing_id=listing_id,
-        url=f"https://funda.nl/koop/amsterdam/huis-{listing_id}",
+        url=f"https://www.funda.nl/en/detail/koop/amsterdam/huis-{listing_id}/",
         address="Test Street 123",
         city=city,
         price=price,
