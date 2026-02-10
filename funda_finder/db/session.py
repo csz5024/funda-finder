@@ -40,13 +40,43 @@ def get_engine(db_url=None, db_path=None):
     return create_engine("sqlite:///:memory:", echo=False)
 
 
-engine = get_engine()
-SessionLocal = sessionmaker(bind=engine)
+_engine = None
+_SessionLocal = None
+
+
+def _get_default_engine():
+    """Return the lazily-initialised default engine (singleton)."""
+    global _engine
+    if _engine is None:
+        _engine = get_engine()
+    return _engine
+
+
+def _get_session_factory():
+    """Return the lazily-initialised session factory (singleton)."""
+    global _SessionLocal
+    if _SessionLocal is None:
+        _SessionLocal = sessionmaker(bind=_get_default_engine())
+    return _SessionLocal
+
+
+# Backward-compatible aliases (accessed as attributes, trigger lazy init)
+class _LazySessionLocal:
+    """Proxy so that ``SessionLocal(...)`` works without eager engine creation."""
+
+    def __call__(self, *args, **kwargs):
+        return _get_session_factory()(*args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(_get_session_factory(), name)
+
+
+SessionLocal = _LazySessionLocal()
 
 
 def init_db() -> None:
     """Create all tables (useful for quick bootstrapping without Alembic)."""
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=_get_default_engine())
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -54,7 +84,7 @@ def get_db() -> Generator[Session, None, None]:
 
     Intended for use as a FastAPI dependency.
     """
-    db = SessionLocal()
+    db = _get_session_factory()()
     try:
         yield db
     finally:
